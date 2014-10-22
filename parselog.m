@@ -15,7 +15,7 @@ function data = parselog(logfile)
 %
 % Repo
 %
-% * github.com/jfpva/MotionCompensatedFetalCMR
+% * github.com/jfpva/AssessTseReducedRGPrep
 % 
 
 %% initialise output structure
