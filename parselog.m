@@ -29,19 +29,20 @@ turbo = struct('mc_cor',0,...
               'rfex_phase_cor',0,...
               'el_cor',0);
 pars = struct('gain',0,...
-              'actgain',0,...
               'turbo',turbo);
-data = struct('seriesNo',0,...
+data = struct('seriesName','',...
+              'seriesNo',0,...
               'date','0000-00-00',...
               'time',time,...
               'duration',[],...
               'pars',pars);
 
 %% regular expressions
+exp.seriesName = '[\s\S]*scan_name\W+:\W+(?<seriesName>[\w|-]+)';
 exp.gain = 'ain set to \(flt\): (?<gain>[.0-9]+)';
 exp.cor  = 'updating `PR_RG_turbo_(?<cor>\w+)\[\s+(?<slice>\d+)\s\] from 0 to (?<value>[-0-9]+)';
 exp.prepstart =   ']\W+(?<date>\w[-0-9]+)\W+(?<time>\d[:.0-9]+)[\s\S]*SingleScan ChangesState from Dispatched to Preparing.  SingleScanJobID: (?<seriesNo>\d+)';
-exp.rgprepstart = ']\W+(?<date>\w[-0-9]+)\W+(?<time>\d[:.0-9]+)[\s\S]*RG: Receive gain optimization';
+exp.rgprepstart = ']\W+(?<date>\w[-0-9]+)\W+(?<time>\d[:.0-9]+)[\s\S]*Initial gain set to[\s\S]*';
 exp.rgprepend =   ']\W+(?<date>\w[-0-9]+)\W+(?<time>\d[:.0-9]+)[\s\S]*FRC: Receiver correction';
 exp.scanstart =   ']\W+(?<date>\w[-0-9]+)\W+(?<time>\d[:.0-9]+)[\s\S]*CDAS\W+Scan starts';
 exp.scanend  =    ']\W+(?<date>\w[-0-9]+)\W+(?<time>\d[:.0-9]+)[\s\S]*Scan progress msg -> SCANEXEC, 100%';
@@ -50,48 +51,58 @@ exp.scanend  =    ']\W+(?<date>\w[-0-9]+)\W+(?<time>\d[:.0-9]+)[\s\S]*Scan progr
 fid = fopen(logfile);
 while 1
     tline = fgetl(fid);
-    if ~ischar(tline), break, end
-    out = regexp(tline,exp.gain,'names');
+    if ~ischar(tline),
+        break, 
+    end
+    clear out
+    % Series name
+    out = regexp(tline,exp.seriesName,'names');
     if ~isempty(out)
-        data.pars.gain = str2num(out.gain);
+        data.seriesName = out.seriesName;
         continue
     end
-    out = regexp(tline,exp.cor,'names');
-    if ~isempty(out)
-        data.pars.turbo(str2num(out.slice)+1).(out.cor) = str2num(out.value);
-        clear out
-        continue
-    end
+    % Prep start
     out = regexp(tline,exp.prepstart,'names');
     if ~isempty(out)
-        data.seriesNo = out.seriesNo;
+        data.seriesNo = str2double(out.seriesNo);
         data.date = out.date;
         data.time.prepstart = out.time;
-        clear out
         continue
     end
+    % RG prep start
     out = regexp(tline,exp.rgprepstart,'names');
     if ~isempty(out)
         data.time.rgprepstart = out.time;
-        clear out
         continue
     end
+    % Gain
+    out = regexp(tline,exp.gain,'names');
+    if ~isempty(out)
+        data.pars.gain = str2double(out.gain);
+        continue
+    end
+    % Turbo corrections
+    out = regexp(tline,exp.cor,'names');
+    if ~isempty(out)
+        data.pars.turbo(str2double(out.slice)+1).(out.cor) = str2double(out.value);
+        continue
+    end
+    % RG prep end
     out = regexp(tline,exp.rgprepend,'names');
     if ~isempty(out)
         data.time.rgprepend = out.time;
-        clear out
         continue
     end
+    % Scan start
     out = regexp(tline,exp.scanstart,'names');
     if ~isempty(out)
         data.time.scanstart = out.time;
-        clear out
         continue
     end
+    % Scan end
     out = regexp(tline,exp.scanend,'names');
     if ~isempty(out)
         data.time.scanend = out.time;
-        clear out
         continue
     end
 end
