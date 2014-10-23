@@ -1,11 +1,14 @@
 function data = parselog(logfile)
 % PARSELOG parse Philips MRI (R3) log file
 %
+% logfile       - path to log file
+% 
 % data.seriesNo - series number
 %     .date     - date string
 %     .time     - scan event time strings
 %     .duration - scan event durations, in seconds
 %     .pars     - preparation parameters
+% 
 
 %% Info
 % 
@@ -46,6 +49,9 @@ exp.rgprepstart = ']\W+(?<date>\w[-0-9]+)\W+(?<time>\d[:.0-9]+)[\s\S]*Initial ga
 exp.rgprepend =   ']\W+(?<date>\w[-0-9]+)\W+(?<time>\d[:.0-9]+)[\s\S]*FRC: Receiver correction';
 exp.scanstart =   ']\W+(?<date>\w[-0-9]+)\W+(?<time>\d[:.0-9]+)[\s\S]*CDAS\W+Scan starts';
 exp.scanend  =    ']\W+(?<date>\w[-0-9]+)\W+(?<time>\d[:.0-9]+)[\s\S]*Scan progress msg -> SCANEXEC, 100%';
+
+% NOTE: could add expressions for slice positions (e.g., 'Z Offcentre:')
+% for alignment of series without common scan prescription 
 
 %% parse log
 fid = fopen(logfile);
