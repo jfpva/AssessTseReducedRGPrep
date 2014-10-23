@@ -1,5 +1,8 @@
 function mdtable = resultstable(data)
 % RESULTSTABLE print results in table
+% 
+% data - structure of series info produced by parselog()
+%
 
 %% Info
 % 
